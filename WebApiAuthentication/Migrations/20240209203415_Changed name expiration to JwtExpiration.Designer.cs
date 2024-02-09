@@ -12,8 +12,8 @@ using WebApiAuthentication.DataAccess.Context;
 namespace WebApiAuthentication.Migrations
 {
     [DbContext(typeof(ReviewContext))]
-    [Migration("20230829093033_AddRefreshToken")]
-    partial class AddRefreshToken
+    [Migration("20240209203415_Changed name expiration to JwtExpiration")]
+    partial class ChangednameexpirationtoJwtExpiration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

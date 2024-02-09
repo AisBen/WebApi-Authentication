@@ -12,8 +12,8 @@ using WebApiAuthentication.DataAccess.Context;
 namespace WebApiAuthentication.Migrations
 {
     [DbContext(typeof(ReviewContext))]
-    [Migration("20230610102414_AddUsers")]
-    partial class AddUsers
+    [Migration("20240209185649_firstMig")]
+    partial class firstMig
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -262,6 +262,12 @@ namespace WebApiAuthentication.Migrations
 
                     b.Property<bool>("RatingsAllowed")
                         .HasColumnType("bit");
+
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("RefreshTokenExpiry")
+                        .HasColumnType("datetime2");
 
                     b.HasDiscriminator().HasValue("LibraryUser");
                 });
