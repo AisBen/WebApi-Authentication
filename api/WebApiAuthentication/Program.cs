@@ -76,19 +76,6 @@ builder.Services.AddAuthentication(options =>
 	};
 });
 
-const string policy = "defaultPolicy";
-
-builder.Services.AddCors(options =>
-{
-	options.AddPolicy(policy,
-					  p =>
-					  {
-						  p.AllowAnyHeader();
-						  p.AllowAnyMethod();
-						  p.AllowAnyHeader();
-						  p.AllowAnyOrigin();
-					  });
-});
 
 var app = builder.Build();
 
@@ -103,7 +90,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors(policy);
+app.UseCors(opt =>
+{
+	opt.AllowAnyHeader().AllowAnyMethod().AllowCredentials().WithOrigins("http://localhost:3000");
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
