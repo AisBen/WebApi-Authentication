@@ -2,8 +2,8 @@
 {
 	public class LoginResponse
 	{
-		public required string JwtToken { get; set; }
-		public DateTime JwtExpiration { get; set; }
+		public required string AccessToken { get; set; }
+		public DateTime AccessTokenExpiration { get; set; }
 		public required string RefreshToken { get; set; }
 	}
 }

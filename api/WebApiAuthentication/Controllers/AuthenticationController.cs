@@ -87,8 +87,8 @@ namespace WebApiAuthentication.Controllers
 
 			return Ok(new LoginResponse
 			{
-				JwtToken = new JwtSecurityTokenHandler().WriteToken(token),
-				JwtExpiration = token.ValidTo,
+				AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
+				AccessTokenExpiration = token.ValidTo,
 				RefreshToken = refreshToken
 			});
 		}
@@ -117,8 +117,8 @@ namespace WebApiAuthentication.Controllers
 
 			return Ok(new LoginResponse
 			{
-				JwtToken = new JwtSecurityTokenHandler().WriteToken(token),
-				JwtExpiration = token.ValidTo,
+				AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
+				AccessTokenExpiration = token.ValidTo,
 				RefreshToken = model.RefreshToken // could also refresh the refresh token here
 			});
 		}
@@ -180,7 +180,7 @@ namespace WebApiAuthentication.Controllers
 			var token = new JwtSecurityToken(
 				issuer: _configuration["JWT:ValidIssuer"],
 				audience: _configuration["JWT:ValidAudience"],
-				expires: DateTime.UtcNow.AddSeconds(30),
+				expires: DateTime.UtcNow.AddSeconds(5),
 				claims: authClaims,
 				signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
 				);
