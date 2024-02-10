@@ -2,9 +2,9 @@
 {
 	public static class USER_ROLES
 	{
-		public const string ADMIN = "ADMIN";
-		public const string MANAGER = "MANAGER";
-		public const string ARTIST = "ARTIST";
+		public const string ADMIN = "admin";
+		public const string MANAGER = "manager";
+		public const string ARTIST = "artist";
 
 		public static HashSet<string> GetAllRoles()
 		{

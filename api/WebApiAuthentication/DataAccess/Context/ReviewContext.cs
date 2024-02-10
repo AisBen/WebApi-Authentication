@@ -4,9 +4,9 @@ using WebApiAuthentication.DataAccess.Entities;
 
 namespace WebApiAuthentication.DataAccess.Context
 {
-    public class TheDbContext : IdentityDbContext<ApplicationUser>
+	public class ReviewContext : IdentityDbContext<ApplicationUser>
 	{
-		public TheDbContext(DbContextOptions<TheDbContext> options)
+		public ReviewContext(DbContextOptions<ReviewContext> options)
 			: base(options)
 		{
 		}

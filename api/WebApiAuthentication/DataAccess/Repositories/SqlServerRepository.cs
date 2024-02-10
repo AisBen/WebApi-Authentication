@@ -5,9 +5,9 @@ namespace WebApiAuthentication.DataAccess.Repositories
 {
     public class SqlServerRepository : IReviewRepository
     {
-        private readonly TheDbContext _reviewContext;
+        private readonly ReviewContext _reviewContext;
 
-        public SqlServerRepository(TheDbContext reviewContext)
+        public SqlServerRepository(ReviewContext reviewContext)
         {
             _reviewContext = reviewContext;
         }

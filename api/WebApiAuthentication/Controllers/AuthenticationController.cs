@@ -11,7 +11,7 @@ using WebApiAuthentication.DataAccess.Entities;
 
 namespace WebApiAuthentication.Controllers
 {
-    [Route("api/[controller]")]
+	[Route("api/[controller]")]
 	[ApiController]
 	public class AuthenticationController : ControllerBase
 	{
@@ -73,7 +73,10 @@ namespace WebApiAuthentication.Controllers
 			if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
 				return Unauthorized();
 
-			JwtSecurityToken token = _generateJwt(model.Username);
+			var roles = await _userManager.GetRolesAsync(user);
+			var roleClaims = roles.Select(role => new Claim(ClaimTypes.Role, role)).ToList();
+
+			JwtSecurityToken token = _generateJwt(model.Username, roleClaims);
 
 			var refreshToken = _generateRefreshToken();
 
@@ -89,15 +92,13 @@ namespace WebApiAuthentication.Controllers
 			{
 				AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
 				AccessTokenExpiration = token.ValidTo,
-				RefreshToken = refreshToken
+				RefreshToken = refreshToken,
+				Roles = roles.ToList()
 			});
 		}
 
 		[HttpPost("Refresh")]
-		[ProducesResponseType(StatusCodes.Status200OK)]
-		[ProducesResponseType(StatusCodes.Status403Forbidden)]
-		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
-		public async Task<IActionResult> Refresh([FromBody] RefreshModel model) // accepts a refresh token and returns a new JWT
+		public async Task<IActionResult> Refresh([FromBody] RefreshModel model)  // accepts a refresh token and returns a new JWT
 		{
 			_logger.LogInformation("Refresh called");
 
@@ -107,21 +108,26 @@ namespace WebApiAuthentication.Controllers
 				return Forbid();
 
 			var user = await _userManager.FindByNameAsync(principal.Identity.Name);
-
 			if (user is null || user.RefreshToken != model.RefreshToken || user.RefreshTokenExpiry < DateTime.UtcNow)
 				return Forbid();
 
-			var token = _generateJwt(principal.Identity.Name);
+
+			// Fetch roles again for the user
+			var roles = await _userManager.GetRolesAsync(user);
+			var roleClaims = roles.Select(role => new Claim(ClaimTypes.Role, role)).ToList();
+
+			var newAccessToken = _generateJwt(principal.Identity.Name, roleClaims);
 
 			_logger.LogInformation("Refresh succeeded");
 
 			return Ok(new LoginResponse
 			{
-				AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
-				AccessTokenExpiration = token.ValidTo,
-				RefreshToken = model.RefreshToken // could also refresh the refresh token here
+				AccessToken = new JwtSecurityTokenHandler().WriteToken(newAccessToken),
+				AccessTokenExpiration = newAccessToken.ValidTo,
+				RefreshToken = model.RefreshToken // Decide if you want to issue a new refresh token here
 			});
 		}
+
 
 		[Authorize]
 		[HttpDelete("Revoke")] // after this is called, you cant use refresh call to get a new JWT
@@ -166,24 +172,23 @@ namespace WebApiAuthentication.Controllers
 			return new JwtSecurityTokenHandler().ValidateToken(token, validation, out _);
 		}
 
-		private JwtSecurityToken _generateJwt(string username)
+		private JwtSecurityToken _generateJwt(string username, List<Claim> roleClaims)
 		{
 			var authClaims = new List<Claim>
 			{
 				new Claim(ClaimTypes.Name, username),
 				new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
 			};
+			authClaims.AddRange(roleClaims);
 
 			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
 				_configuration["JWT:Secret"] ?? throw new InvalidOperationException("Secret not configured")));
-
 			var token = new JwtSecurityToken(
 				issuer: _configuration["JWT:ValidIssuer"],
 				audience: _configuration["JWT:ValidAudience"],
-				expires: DateTime.UtcNow.AddSeconds(5),
+				expires: DateTime.UtcNow.AddMinutes(1), // Adjust token expiry as needed
 				claims: authClaims,
-				signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
-				);
+				signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
 
 			return token;
 		}

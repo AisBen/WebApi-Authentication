@@ -24,7 +24,7 @@ namespace WebApiAuthentication.Controllers
 			_reviewRepository = reviewRepository;
 		}
 
-		[Authorize(Policy = AUTHORIZE_POLICY.ARTIST_ADMIN)]
+		[Authorize(Policy = AUTHORIZE_POLICY.ALL_ROLES)]
 		[HttpGet]
 		[ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<BookReview>))]
 		[ProducesResponseType(StatusCodes.Status500InternalServerError)]

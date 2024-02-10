@@ -6,7 +6,7 @@ using WebApiAuthentication.DataAccess.Repositories;
 
 namespace WebApiAuthentication.Services
 {
-    public static class ServiceExtensions
+	public static class ServiceExtensions
 	{
 		public static IServiceCollection RegisterServices(this IServiceCollection services)
 		{
@@ -15,7 +15,7 @@ namespace WebApiAuthentication.Services
 
 			// Identity Services
 			services.AddIdentity<ApplicationUser, IdentityRole>()
-				.AddEntityFrameworkStores<TheDbContext>();
+				.AddEntityFrameworkStores<ReviewContext>();
 
 			// Custom Services
 			services.AddScoped<UserManager<ApplicationUser>>();
@@ -36,6 +36,9 @@ namespace WebApiAuthentication.Services
 
 				options.AddPolicy(AUTHORIZE_POLICY.ONLY_MANAGER, policy =>
 					policy.RequireRole(USER_ROLES.MANAGER));
+
+				options.AddPolicy(AUTHORIZE_POLICY.ALL_ROLES, policy =>
+					policy.RequireRole(USER_ROLES.ARTIST, USER_ROLES.MANAGER, USER_ROLES.ADMIN));
 			});
 
 			return services;
