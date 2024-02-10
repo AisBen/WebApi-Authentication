@@ -5,14 +5,13 @@ using WebApiAuthentication.DataAccess.Entities;
 
 namespace WebApiAuthentication.DataAccess.Context
 {
-    public class ReviewContext : IdentityDbContext
-    {
-        public ReviewContext(DbContextOptions<ReviewContext> options)
-            :base(options)
-        {            
-        }
+	public class ReviewContext : IdentityDbContext<LibraryUser>
+	{
+		public ReviewContext(DbContextOptions<ReviewContext> options)
+			: base(options)
+		{
+		}
 
-        public DbSet<BookReview> BookReviews { get; set; }
-        public DbSet<LibraryUser> LibraryUsers { get; set; }
-    }
+		public DbSet<BookReview> BookReviews { get; set; }
+	}
 }

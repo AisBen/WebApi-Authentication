@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WebApiAuthentication.DataAccess.Constants;
 using WebApiAuthentication.DataAccess.Entities;
 using WebApiAuthentication.DataAccess.Repositories;
 
 namespace WebApiAuthentication.Controllers
 {
-	[Authorize]
 	[Route("api/[controller]")]
 	[ApiController]
 	public class BookReviewsController : ControllerBase
@@ -24,6 +24,7 @@ namespace WebApiAuthentication.Controllers
 			_reviewRepository = reviewRepository;
 		}
 
+		[Authorize(Policy = AUTHORIZE_POLICY.ARTIST_ADMIN)]
 		[HttpGet]
 		[ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<BookReview>))]
 		[ProducesResponseType(StatusCodes.Status500InternalServerError)]

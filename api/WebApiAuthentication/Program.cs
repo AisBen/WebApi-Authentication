@@ -1,13 +1,11 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
-using WebApiAuthentication.Authentication;
 using WebApiAuthentication.DataAccess.Context;
-using WebApiAuthentication.DataAccess.Repositories;
+using WebApiAuthentication.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,12 +16,8 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<ReviewContext>(options =>
 				options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddIdentity<LibraryUser, IdentityRole>(options =>
-	options.User.AllowedUserNameCharacters += " ")
-		   .AddEntityFrameworkStores<ReviewContext>()
-		   .AddDefaultTokenProviders();
 
-builder.Services.AddScoped<IReviewRepository, SqlServerRepository>();
+builder.Services.RegisterServices();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
