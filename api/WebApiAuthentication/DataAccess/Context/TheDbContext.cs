@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using WebApiAuthentication.DataAccess.Entities;
+using WebApiAuthentication.DataAccess.Models.Entities;
 
 namespace WebApiAuthentication.DataAccess.Context
 {

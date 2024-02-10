@@ -1,4 +1,4 @@
-﻿namespace WebApiAuthentication.Authentication
+﻿namespace WebApiAuthentication.DataAccess.Authentication
 {
     public class LoginModel
     {

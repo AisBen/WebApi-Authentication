@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using WebApiAuthentication.DataAccess.Constants;
 using WebApiAuthentication.DataAccess.Context;
-using WebApiAuthentication.DataAccess.Entities;
+using WebApiAuthentication.DataAccess.Models.Entities;
 using WebApiAuthentication.DataAccess.Repositories;
 
 namespace WebApiAuthentication.Services
@@ -21,6 +21,7 @@ namespace WebApiAuthentication.Services
 			services.AddScoped<UserManager<ApplicationUser>>();
 			services.AddScoped<RoleService>();
 			services.AddScoped<UserRoleService>();
+			services.AddScoped<JwtAuthenticationService>();
 
 			// Register authorization policies
 			services.AddAuthorization(options =>

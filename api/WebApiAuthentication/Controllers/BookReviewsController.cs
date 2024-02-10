@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApiAuthentication.DataAccess.Constants;
-using WebApiAuthentication.DataAccess.Entities;
+using WebApiAuthentication.DataAccess.Models.Entities;
 using WebApiAuthentication.DataAccess.Repositories;
 
 namespace WebApiAuthentication.Controllers

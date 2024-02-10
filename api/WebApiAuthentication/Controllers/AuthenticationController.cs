@@ -1,13 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using WebApiAuthentication.Authentication;
-using WebApiAuthentication.DataAccess.Entities;
+using WebApiAuthentication.DataAccess.Authentication;
+using WebApiAuthentication.DataAccess.Models.Entities;
+using WebApiAuthentication.Services;
 
 namespace WebApiAuthentication.Controllers
 {
@@ -18,121 +14,53 @@ namespace WebApiAuthentication.Controllers
 		private readonly UserManager<ApplicationUser> _userManager;
 		private readonly IConfiguration _configuration;
 		private readonly ILogger<AuthenticationController> _logger;
+		private readonly JwtAuthenticationService _jwtAuthenticationService;
 
-		public AuthenticationController(UserManager<ApplicationUser> userManager, IConfiguration configuration, ILogger<AuthenticationController> logger)
+		public AuthenticationController(UserManager<ApplicationUser> userManager, IConfiguration configuration, ILogger<AuthenticationController> logger, JwtAuthenticationService jwtAuthenticationService)
 		{
 			_userManager = userManager;
 			_configuration = configuration;
 			_logger = logger;
+			_jwtAuthenticationService = jwtAuthenticationService;
 		}
 
 		[HttpPost("Register")]
-		[ProducesResponseType(StatusCodes.Status409Conflict)]
-		[ProducesResponseType(StatusCodes.Status200OK)]
-		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
 		public async Task<IActionResult> Register([FromBody] RegistrationModel model)
 		{
-			_logger.LogInformation("Register called");
-
-			var existingUser = await _userManager.FindByNameAsync(model.Username);
-
-			if (existingUser != null)
-				return Conflict("User already exists.");
-
-			var newUser = new ApplicationUser
+			var result = await _jwtAuthenticationService.Register(model);
+			if (!result.IsSuccess)
 			{
-				Reviews = new List<BookReview>(),
-				UserName = model.Username,
-				Email = model.Email,
-				SecurityStamp = Guid.NewGuid().ToString()
-			};
-
-			var result = await _userManager.CreateAsync(newUser, model.Password);
-
-			if (result.Succeeded)
-			{
-				_logger.LogInformation("Register succeeded");
-
-				return Ok("User successfully created");
+				return BadRequest(result);
 			}
-			else
-				return StatusCode(StatusCodes.Status500InternalServerError,
-					   $"Failed to create user: {string.Join(" ", result.Errors.Select(e => e.Description))}");
+
+			return Ok(result);
 		}
 
 		[HttpPost("Login")]
-		[ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LoginResponse))]
-		[ProducesResponseType(StatusCodes.Status401Unauthorized)]
-		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
 		public async Task<IActionResult> Login([FromBody] LoginModel model)
 		{
-			_logger.LogInformation("Login called");
-
-			var user = await _userManager.FindByNameAsync(model.Username);
-
-			if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
-				return Unauthorized();
-
-			var roles = await _userManager.GetRolesAsync(user);
-			var roleClaims = roles.Select(role => new Claim(ClaimTypes.Role, role)).ToList();
-
-			JwtSecurityToken token = _generateJwt(model.Username, roleClaims);
-
-			var refreshToken = _generateRefreshToken();
-
-			user.RefreshToken = refreshToken;
-			user.RefreshTokenExpiry = DateTime.UtcNow.AddSeconds(20); // refresh token expiry must be larger than access token expiry
-																	  //user.RefreshTokenExpiry = DateTime.UtcNow.AddHours(3);
-
-			await _userManager.UpdateAsync(user);
-
-			_logger.LogInformation("Login succeeded");
-
-			return Ok(new LoginResponse
+			var result = await _jwtAuthenticationService.Login(model);
+			if (!result.IsSuccess)
 			{
-				AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
-				AccessTokenExpiration = token.ValidTo,
-				RefreshToken = refreshToken,
-			});
+				return BadRequest(result);
+			}
+
+			return Ok(result);
 		}
 
 		[HttpPost("Refresh")]
 		public async Task<IActionResult> Refresh([FromBody] RefreshModel model)  // accepts a refresh token and returns a new JWT
 		{
-			_logger.LogInformation("Refresh called");
-
-			var principal = _getPrincipalFromExpiredToken(model.AccessToken);
-
-			if (principal?.Identity?.Name is null)
-				return Forbid();
-
-			var user = await _userManager.FindByNameAsync(principal.Identity.Name);
-			if (user is null || user.RefreshToken != model.RefreshToken || user.RefreshTokenExpiry < DateTime.UtcNow)
-				return Forbid();
-
-
-			// Fetch roles again for the user
-			var roles = await _userManager.GetRolesAsync(user);
-			var roleClaims = roles.Select(role => new Claim(ClaimTypes.Role, role)).ToList();
-
-			var newAccessToken = _generateJwt(principal.Identity.Name, roleClaims);
-
-			_logger.LogInformation("Refresh succeeded");
-
-			return Ok(new LoginResponse
+			var result = await _jwtAuthenticationService.Refresh(model);
+			if (!result.IsSuccess)
 			{
-				AccessToken = new JwtSecurityTokenHandler().WriteToken(newAccessToken),
-				AccessTokenExpiration = newAccessToken.ValidTo,
-				RefreshToken = model.RefreshToken // Decide if you want to issue a new refresh token here
-			});
+				return BadRequest(result);
+			}
+			return Ok(result);
 		}
-
 
 		[Authorize]
 		[HttpDelete("Revoke")] // after this is called, you cant use refresh call to get a new JWT
-		[ProducesResponseType(StatusCodes.Status200OK)]
-		[ProducesResponseType(StatusCodes.Status401Unauthorized)]
-		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
 		public async Task<IActionResult> Revoke()
 		{
 			_logger.LogInformation("Revoke called");
@@ -156,52 +84,5 @@ namespace WebApiAuthentication.Controllers
 			return Ok();
 		}
 
-		private ClaimsPrincipal? _getPrincipalFromExpiredToken(string token)
-		{
-			var secret = _configuration["JWT:Secret"] ?? throw new InvalidOperationException("Secret not configured");
-
-			var validation = new TokenValidationParameters
-			{
-				ValidIssuer = _configuration["JWT:ValidIssuer"],
-				ValidAudience = _configuration["JWT:ValidAudience"],
-				IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
-				ValidateLifetime = false
-			};
-
-			return new JwtSecurityTokenHandler().ValidateToken(token, validation, out _);
-		}
-
-		private JwtSecurityToken _generateJwt(string username, List<Claim> roleClaims)
-		{
-			var authClaims = new List<Claim>
-			{
-				new Claim(ClaimTypes.Name, username),
-				new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-			};
-			authClaims.AddRange(roleClaims);
-
-
-			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-				_configuration["JWT:Secret"] ?? throw new InvalidOperationException("Secret not configured")));
-			var token = new JwtSecurityToken(
-				issuer: _configuration["JWT:ValidIssuer"],
-				audience: _configuration["JWT:ValidAudience"],
-				expires: DateTime.UtcNow.AddMinutes(1), // Adjust token expiry as needed
-				claims: authClaims,
-				signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
-
-			return token;
-		}
-
-		private static string _generateRefreshToken()
-		{
-			var randomNumber = new byte[64];
-
-			using var generator = RandomNumberGenerator.Create();
-
-			generator.GetBytes(randomNumber);
-
-			return Convert.ToBase64String(randomNumber);
-		}
 	}
 }

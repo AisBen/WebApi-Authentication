@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApiAuthentication.DataAccess.Context;
-using WebApiAuthentication.DataAccess.Entities;
+using WebApiAuthentication.DataAccess.Models.Entities;
 
 
 namespace WebApiAuthentication.Controllers
 {
-	[Route("api/[controller]")]
+    [Route("api/[controller]")]
 	[ApiController]
 	public class ApplicationUsersController : ControllerBase
 	{

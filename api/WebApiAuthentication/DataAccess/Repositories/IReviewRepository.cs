@@ -1,4 +1,4 @@
-﻿using WebApiAuthentication.DataAccess.Entities;
+﻿using WebApiAuthentication.DataAccess.Models.Entities;
 
 namespace WebApiAuthentication.DataAccess.Repositories
 {

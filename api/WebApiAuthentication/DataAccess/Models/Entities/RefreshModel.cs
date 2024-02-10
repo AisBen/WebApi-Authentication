@@ -1,4 +1,4 @@
-﻿namespace WebApiAuthentication.Authentication
+﻿namespace WebApiAuthentication.DataAccess.Models.Entities
 {
     public class RefreshModel
     {

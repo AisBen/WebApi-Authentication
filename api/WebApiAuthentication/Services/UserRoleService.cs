@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using WebApiAuthentication.DataAccess.Entities;
+using WebApiAuthentication.DataAccess.Models.Entities;
 namespace WebApiAuthentication.Services
 {
     public class UserRoleService

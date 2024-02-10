@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace WebApiAuthentication.Authentication
+namespace WebApiAuthentication.DataAccess.Authentication
 {
     public class RegistrationModel
     {
