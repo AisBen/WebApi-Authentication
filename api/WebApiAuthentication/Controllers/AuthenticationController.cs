@@ -93,7 +93,6 @@ namespace WebApiAuthentication.Controllers
 				AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
 				AccessTokenExpiration = token.ValidTo,
 				RefreshToken = refreshToken,
-				Roles = roles.ToList()
 			});
 		}
 
@@ -180,6 +179,7 @@ namespace WebApiAuthentication.Controllers
 				new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
 			};
 			authClaims.AddRange(roleClaims);
+
 
 			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
 				_configuration["JWT:Secret"] ?? throw new InvalidOperationException("Secret not configured")));
