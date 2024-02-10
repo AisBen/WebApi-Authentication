@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using WebApiAuthentication.Controllers;
 using WebApiAuthentication.DataAccess.Authentication;
+using WebApiAuthentication.DataAccess.Models.DTOs.Responses;
 using WebApiAuthentication.DataAccess.Models.Entities;
 
 namespace WebApiAuthentication.Services
@@ -26,17 +26,17 @@ namespace WebApiAuthentication.Services
 			_userManager = userManager;
 		}
 
-		public async Task<LoginResponseModel> Login(LoginModel model)
+		public async Task<AisResponseDto<LoginDto>> Login(LoginModel model)
 		{
 			_logger.LogInformation("Login called");
 
 			var user = await _userManager.FindByNameAsync(model.Username);
 
 			if (user == null)
-				return new LoginResponseModel { Message = "User does not exist", IsSuccess = false };
+				return new AisResponseDto<LoginDto> { Message = "User does not exist", IsSuccess = false };
 
 			if (!await _userManager.CheckPasswordAsync(user, model.Password))
-				return new LoginResponseModel { Message = "Passwords do not match", IsSuccess = false };
+				return new AisResponseDto<LoginDto> { Message = "Passwords do not match", IsSuccess = false };
 
 			var roles = await _userManager.GetRolesAsync(user);
 			var roleClaims = roles.Select(role => new Claim(ClaimTypes.Role, role)).ToList();
@@ -52,23 +52,26 @@ namespace WebApiAuthentication.Services
 
 			_logger.LogInformation("Login succeeded");
 
-			return new LoginResponseModel
+			return new AisResponseDto<LoginDto>
 			{
-				AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
-				AccessTokenExpiration = token.ValidTo,
-				RefreshToken = refreshToken,
+				Data = new LoginDto
+				{
+					AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
+					AccessTokenExpiration = token.ValidTo,
+					RefreshToken = refreshToken
+				},
 				IsSuccess = true,
 				Message = "Login succeeded"
 			};
 		}
-		public async Task<RegistrationResponseModel> Register(RegistrationModel model)
+		public async Task<AisResponseDto<RegistrationDto>> Register(RegistrationModel model)
 		{
 			_logger.LogInformation("Register called");
 
 			var existingUser = await _userManager.FindByNameAsync(model.Username);
 
 			if (existingUser != null)
-				return new RegistrationResponseModel { Message = "User already exists", IsSuccess = false };
+				return new AisResponseDto<RegistrationDto> { Message = "User already exists", IsSuccess = false };
 
 			var newUser = new ApplicationUser
 			{
@@ -82,11 +85,11 @@ namespace WebApiAuthentication.Services
 
 			if (result.Succeeded)
 			{
-				return new RegistrationResponseModel { Message = "User already exists", IsSuccess = true };
+				return new AisResponseDto<RegistrationDto> { Message = "User already exists", IsSuccess = true };
 
 			}
 			else
-				return new RegistrationResponseModel
+				return new AisResponseDto<RegistrationDto>
 				{
 					Message = "Failed to create user",
 					IsSuccess = false,
@@ -95,18 +98,18 @@ namespace WebApiAuthentication.Services
 
 		}
 
-		public async Task<LoginResponseModel> Refresh(RefreshModel model)
+		public async Task<AisResponseDto<LoginDto>> Refresh(RefreshModel model)
 		{
 			_logger.LogInformation("Refresh called");
 
 			var principal = _getPrincipalFromExpiredToken(model.AccessToken);
 
 			if (principal?.Identity?.Name is null)
-				return new LoginResponseModel { Message = "Accesstoken not valid", IsSuccess = false };
+				return new AisResponseDto<LoginDto> { Message = "Accesstoken not valid", IsSuccess = false };
 
 			var user = await _userManager.FindByNameAsync(principal.Identity.Name);
 			if (user is null || user.RefreshToken != model.RefreshToken || user.RefreshTokenExpiry < DateTime.UtcNow)
-				return new LoginResponseModel { Message = "User does not exist", IsSuccess = false };
+				return new AisResponseDto<LoginDto> { Message = "User does not exist", IsSuccess = false };
 
 
 			// Fetch roles again for the user
@@ -116,11 +119,15 @@ namespace WebApiAuthentication.Services
 			var newAccessToken = _generateJwt(principal.Identity.Name, roleClaims);
 
 
-			return new LoginResponseModel
+			return new AisResponseDto<LoginDto>
 			{
-				AccessToken = new JwtSecurityTokenHandler().WriteToken(newAccessToken),
-				AccessTokenExpiration = newAccessToken.ValidTo,
-				RefreshToken = model.RefreshToken, // Decide if you want to issue a new refresh token here
+				Data = new LoginDto
+				{
+					// Decide if you want to issue a new refresh token here
+					AccessToken = new JwtSecurityTokenHandler().WriteToken(newAccessToken),
+					AccessTokenExpiration = newAccessToken.ValidTo,
+					RefreshToken = model.RefreshToken,
+				},
 				IsSuccess = true,
 				Message = "Refresh succeeded"
 			};
@@ -175,24 +182,6 @@ namespace WebApiAuthentication.Services
 
 
 	}
-	public class AisResponseModel
-	{
-		public string Message { get; set; }
-		public bool IsSuccess { get; set; }
-		public IEnumerable<string> Errors { get; set; }
-	}
-	public class LoginResponseModel : AisResponseModel
-	{
-		public string? AccessToken { get; set; }
-		public DateTime AccessTokenExpiration { get; set; }
-		public string? RefreshToken { get; set; }
-	}
-	public class RegistrationResponseModel : AisResponseModel
-	{
-		public string Username { get; set; }
-		public string Password { get; set; }
-		[EmailAddress]
-		public string Email { get; set; }
-	}
+
 }
 

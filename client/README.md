@@ -1,17 +1,30 @@
-# "React Redux Login Authentication Flow and JWT Access, Refresh Tokens, Cookies"
+# React + TypeScript + Vite
 
-✅ [Check out my YouTube Channel with all of my tutorials](https://www.youtube.com/DaveGrayTeachesCode).
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-**Description:**
+Currently, two official plugins are available:
 
-This repository shares the code applied during the [YouTube Tutorial](https://youtu.be/-JJFQ9bkUbo). 
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-Build the backend REST API that I use for authentication in this tutorial with my [7 hour Node JS for Beginners course](https://youtu.be/f2EqECiTBL8) on my channel.
+## Expanding the ESLint configuration
 
-Just starting with Redux? I have a [4 hour Redux course tutorial video](https://youtu.be/NqzdVN2tyvQ) on my channel.  
+If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
 
-Learn about JWT Authentication Flow and React in my [React Login Series](https://www.youtube.com/playlist?list=PL0Zuz27SZ-6PRCpm9clX0WiBEMB70FWwd).
+- Configure the top-level `parserOptions` property like this:
 
-### Academic Honesty
+```js
+export default {
+  // other rules...
+  parserOptions: {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+    project: ['./tsconfig.json', './tsconfig.node.json'],
+    tsconfigRootDir: __dirname,
+  },
+}
+```
 
-**DO NOT COPY FOR AN ASSIGNMENT** - Avoid plagiargism and adhere to the spirit of this [Academic Honesty Policy](https://www.freecodecamp.org/news/academic-honesty-policy/).
+- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
+- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
+- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list

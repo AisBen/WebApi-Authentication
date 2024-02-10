@@ -22,7 +22,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
     const refreshToken = api.getState().auth.refreshToken;
 
     const response = await api.dispatch(authApiSlice.endpoints.refresh.initiate({ accessToken, refreshToken }));
-    const newAccessToken = response.data?.accessToken;
+    const newAccessToken = response.data?.data.accessToken;
     if (newAccessToken) {
       // Retry the original query with new access token
       result = await baseQuery(args, api, extraOptions);

@@ -12,14 +12,12 @@ namespace WebApiAuthentication.Controllers
 	public class AuthenticationController : ControllerBase
 	{
 		private readonly UserManager<ApplicationUser> _userManager;
-		private readonly IConfiguration _configuration;
 		private readonly ILogger<AuthenticationController> _logger;
 		private readonly JwtAuthenticationService _jwtAuthenticationService;
 
-		public AuthenticationController(UserManager<ApplicationUser> userManager, IConfiguration configuration, ILogger<AuthenticationController> logger, JwtAuthenticationService jwtAuthenticationService)
+		public AuthenticationController(UserManager<ApplicationUser> userManager, ILogger<AuthenticationController> logger, JwtAuthenticationService jwtAuthenticationService)
 		{
 			_userManager = userManager;
-			_configuration = configuration;
 			_logger = logger;
 			_jwtAuthenticationService = jwtAuthenticationService;
 		}

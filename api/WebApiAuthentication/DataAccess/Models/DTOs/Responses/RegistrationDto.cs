@@ -1,8 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace WebApiAuthentication.DataAccess.Authentication
+namespace WebApiAuthentication.DataAccess.Models.DTOs.Responses
 {
-	public class RegistrationModel
+
+	public class RegistrationDto
 	{
 		public required string Username { get; set; }
 		public required string Password { get; set; }
