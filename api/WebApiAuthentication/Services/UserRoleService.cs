@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using WebApiAuthentication.Authentication;
+using WebApiAuthentication.DataAccess.Entities;
 namespace WebApiAuthentication.Services
 {
-	public class UserRoleService
+    public class UserRoleService
 	{
-		private readonly UserManager<LibraryUser> _userManager;
+		private readonly UserManager<ApplicationUser> _userManager;
 
-		public UserRoleService(UserManager<LibraryUser> userManager)
+		public UserRoleService(UserManager<ApplicationUser> userManager)
 		{
 			_userManager = userManager;
 		}

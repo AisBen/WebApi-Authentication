@@ -11,7 +11,7 @@ using WebApiAuthentication.DataAccess.Context;
 
 namespace WebApiAuthentication.Migrations
 {
-    [DbContext(typeof(ReviewContext))]
+    [DbContext(typeof(TheDbContext))]
     [Migration("20240209232622_Changed jwttoken property to AccessToken")]
     partial class ChangedjwttokenpropertytoAccessToken
     {

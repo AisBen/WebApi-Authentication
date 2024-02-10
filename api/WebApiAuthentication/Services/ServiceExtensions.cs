@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using WebApiAuthentication.Authentication;
 using WebApiAuthentication.DataAccess.Constants;
 using WebApiAuthentication.DataAccess.Context;
+using WebApiAuthentication.DataAccess.Entities;
 using WebApiAuthentication.DataAccess.Repositories;
 
 namespace WebApiAuthentication.Services
 {
-	public static class ServiceExtensions
+    public static class ServiceExtensions
 	{
 		public static IServiceCollection RegisterServices(this IServiceCollection services)
 		{
@@ -14,11 +14,11 @@ namespace WebApiAuthentication.Services
 			services.AddScoped<IReviewRepository, SqlServerRepository>();
 
 			// Identity Services
-			services.AddIdentity<LibraryUser, IdentityRole>()
-				.AddEntityFrameworkStores<ReviewContext>();
+			services.AddIdentity<ApplicationUser, IdentityRole>()
+				.AddEntityFrameworkStores<TheDbContext>();
 
 			// Custom Services
-			services.AddScoped<UserManager<LibraryUser>>();
+			services.AddScoped<UserManager<ApplicationUser>>();
 			services.AddScoped<RoleService>();
 			services.AddScoped<UserRoleService>();
 

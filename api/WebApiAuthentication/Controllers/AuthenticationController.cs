@@ -11,15 +11,15 @@ using WebApiAuthentication.DataAccess.Entities;
 
 namespace WebApiAuthentication.Controllers
 {
-	[Route("api/[controller]")]
+    [Route("api/[controller]")]
 	[ApiController]
 	public class AuthenticationController : ControllerBase
 	{
-		private readonly UserManager<LibraryUser> _userManager;
+		private readonly UserManager<ApplicationUser> _userManager;
 		private readonly IConfiguration _configuration;
 		private readonly ILogger<AuthenticationController> _logger;
 
-		public AuthenticationController(UserManager<LibraryUser> userManager, IConfiguration configuration, ILogger<AuthenticationController> logger)
+		public AuthenticationController(UserManager<ApplicationUser> userManager, IConfiguration configuration, ILogger<AuthenticationController> logger)
 		{
 			_userManager = userManager;
 			_configuration = configuration;
@@ -39,7 +39,7 @@ namespace WebApiAuthentication.Controllers
 			if (existingUser != null)
 				return Conflict("User already exists.");
 
-			var newUser = new LibraryUser
+			var newUser = new ApplicationUser
 			{
 				Reviews = new List<BookReview>(),
 				UserName = model.Username,
