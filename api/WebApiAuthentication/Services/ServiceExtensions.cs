@@ -15,7 +15,7 @@ namespace WebApiAuthentication.Services
 
 			// Identity Services
 			services.AddIdentity<ApplicationUser, IdentityRole>()
-				.AddEntityFrameworkStores<ReviewContext>();
+				.AddEntityFrameworkStores<TheDbContext>();
 
 			// Custom Services
 			services.AddScoped<UserManager<ApplicationUser>>();

@@ -5,7 +5,7 @@ const authSlice = createSlice({
   initialState: { user: null, accessToken: null, refreshToken: null, roles: null },
   reducers: {
     setCredentials: (state, action) => {
-      const { user, accessToken, refreshToken } = action.payload.data;
+      const { user, accessToken, refreshToken } = action.payload;
       const rolesClaimUri = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
       state.user = user;
       state.accessToken = accessToken;

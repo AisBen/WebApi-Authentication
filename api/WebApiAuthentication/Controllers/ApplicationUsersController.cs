@@ -6,7 +6,7 @@ using WebApiAuthentication.DataAccess.Models.Entities;
 
 namespace WebApiAuthentication.Controllers
 {
-    [Route("api/[controller]")]
+	[Route("api/[controller]")]
 	[ApiController]
 	public class ApplicationUsersController : ControllerBase
 	{

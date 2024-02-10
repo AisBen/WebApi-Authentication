@@ -5,8 +5,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using WebApiAuthentication.Controllers;
-using WebApiAuthentication.DataAccess.Authentication;
-using WebApiAuthentication.DataAccess.Models.DTOs.Responses;
+using WebApiAuthentication.DataAccess.Constants;
 using WebApiAuthentication.DataAccess.Models.Entities;
 
 namespace WebApiAuthentication.Services
@@ -16,9 +15,6 @@ namespace WebApiAuthentication.Services
 		private readonly UserManager<ApplicationUser> _userManager;
 		private readonly IConfiguration _configuration;
 		private readonly ILogger<AuthenticationController> _logger;
-		//create constant for token expiry
-		private const int AccessTokenExpiryMinutes = 1;
-		private const int RefreshTokenExpiryHours = 3;
 		public JwtAuthenticationService(ILogger<AuthenticationController> logger, IConfiguration configuration, UserManager<ApplicationUser> userManager)
 		{
 			_logger = logger;
@@ -26,113 +22,7 @@ namespace WebApiAuthentication.Services
 			_userManager = userManager;
 		}
 
-		public async Task<AisResponseDto<LoginDto>> Login(LoginModel model)
-		{
-			_logger.LogInformation("Login called");
-
-			var user = await _userManager.FindByNameAsync(model.Username);
-
-			if (user == null)
-				return new AisResponseDto<LoginDto> { Message = "User does not exist", IsSuccess = false };
-
-			if (!await _userManager.CheckPasswordAsync(user, model.Password))
-				return new AisResponseDto<LoginDto> { Message = "Passwords do not match", IsSuccess = false };
-
-			var roles = await _userManager.GetRolesAsync(user);
-			var roleClaims = roles.Select(role => new Claim(ClaimTypes.Role, role)).ToList();
-
-			JwtSecurityToken token = _generateJwt(model.Username, roleClaims);
-
-			var refreshToken = _generateRefreshToken();
-
-			user.RefreshToken = refreshToken;
-			user.RefreshTokenExpiry = DateTime.UtcNow.AddHours(RefreshTokenExpiryHours); // refresh token expiry must be larger than access token expiry
-
-			await _userManager.UpdateAsync(user);
-
-			_logger.LogInformation("Login succeeded");
-
-			return new AisResponseDto<LoginDto>
-			{
-				Data = new LoginDto
-				{
-					AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
-					AccessTokenExpiration = token.ValidTo,
-					RefreshToken = refreshToken
-				},
-				IsSuccess = true,
-				Message = "Login succeeded"
-			};
-		}
-		public async Task<AisResponseDto<RegistrationDto>> Register(RegistrationModel model)
-		{
-			_logger.LogInformation("Register called");
-
-			var existingUser = await _userManager.FindByNameAsync(model.Username);
-
-			if (existingUser != null)
-				return new AisResponseDto<RegistrationDto> { Message = "User already exists", IsSuccess = false };
-
-			var newUser = new ApplicationUser
-			{
-				Reviews = new List<BookReview>(),
-				UserName = model.Username,
-				Email = model.Email,
-				SecurityStamp = Guid.NewGuid().ToString()
-			};
-
-			var result = await _userManager.CreateAsync(newUser, model.Password);
-
-			if (result.Succeeded)
-			{
-				return new AisResponseDto<RegistrationDto> { Message = "User already exists", IsSuccess = true };
-
-			}
-			else
-				return new AisResponseDto<RegistrationDto>
-				{
-					Message = "Failed to create user",
-					IsSuccess = false,
-					Errors = result.Errors.Select(e => e.Description)
-				};
-
-		}
-
-		public async Task<AisResponseDto<LoginDto>> Refresh(RefreshModel model)
-		{
-			_logger.LogInformation("Refresh called");
-
-			var principal = _getPrincipalFromExpiredToken(model.AccessToken);
-
-			if (principal?.Identity?.Name is null)
-				return new AisResponseDto<LoginDto> { Message = "Accesstoken not valid", IsSuccess = false };
-
-			var user = await _userManager.FindByNameAsync(principal.Identity.Name);
-			if (user is null || user.RefreshToken != model.RefreshToken || user.RefreshTokenExpiry < DateTime.UtcNow)
-				return new AisResponseDto<LoginDto> { Message = "User does not exist", IsSuccess = false };
-
-
-			// Fetch roles again for the user
-			var roles = await _userManager.GetRolesAsync(user);
-			var roleClaims = roles.Select(role => new Claim(ClaimTypes.Role, role)).ToList();
-
-			var newAccessToken = _generateJwt(principal.Identity.Name, roleClaims);
-
-
-			return new AisResponseDto<LoginDto>
-			{
-				Data = new LoginDto
-				{
-					// Decide if you want to issue a new refresh token here
-					AccessToken = new JwtSecurityTokenHandler().WriteToken(newAccessToken),
-					AccessTokenExpiration = newAccessToken.ValidTo,
-					RefreshToken = model.RefreshToken,
-				},
-				IsSuccess = true,
-				Message = "Refresh succeeded"
-			};
-		}
-		private ClaimsPrincipal? _getPrincipalFromExpiredToken(string token)
+		public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
 		{
 			var secret = _configuration["JWT:Secret"] ?? throw new InvalidOperationException("Secret not configured");
 
@@ -147,7 +37,7 @@ namespace WebApiAuthentication.Services
 			return new JwtSecurityTokenHandler().ValidateToken(token, validation, out _);
 		}
 
-		private JwtSecurityToken _generateJwt(string username, List<Claim> roleClaims)
+		public JwtSecurityToken GenerateJwt(string username, List<Claim> roleClaims)
 		{
 			var authClaims = new List<Claim>
 			{
@@ -162,14 +52,14 @@ namespace WebApiAuthentication.Services
 			var token = new JwtSecurityToken(
 				issuer: _configuration["JWT:ValidIssuer"],
 				audience: _configuration["JWT:ValidAudience"],
-				expires: DateTime.UtcNow.AddSeconds(AccessTokenExpiryMinutes), // Adjust token expiry as needed
+				expires: DateTime.UtcNow.AddSeconds(JwtTokenValues.AccessTokenExpiryMinutes), // Adjust token expiry as needed
 				claims: authClaims,
 				signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
 
 			return token;
 		}
 
-		private static string _generateRefreshToken()
+		public string GenerateRefreshToken()
 		{
 			var randomNumber = new byte[64];
 
