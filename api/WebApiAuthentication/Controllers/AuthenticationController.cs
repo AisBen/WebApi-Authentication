@@ -78,8 +78,8 @@ namespace WebApiAuthentication.Controllers
 			var refreshToken = _generateRefreshToken();
 
 			user.RefreshToken = refreshToken;
-			//user.RefreshTokenExpiry = DateTime.UtcNow.AddMinutes(1); // refresh token expiry must be larger than access token expiry
-			user.RefreshTokenExpiry = DateTime.UtcNow.AddHours(3);
+			user.RefreshTokenExpiry = DateTime.UtcNow.AddSeconds(20); // refresh token expiry must be larger than access token expiry
+																	  //user.RefreshTokenExpiry = DateTime.UtcNow.AddHours(3);
 
 			await _userManager.UpdateAsync(user);
 
@@ -95,7 +95,7 @@ namespace WebApiAuthentication.Controllers
 
 		[HttpPost("Refresh")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
-		[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+		[ProducesResponseType(StatusCodes.Status403Forbidden)]
 		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
 		public async Task<IActionResult> Refresh([FromBody] RefreshModel model) // accepts a refresh token and returns a new JWT
 		{
@@ -104,12 +104,12 @@ namespace WebApiAuthentication.Controllers
 			var principal = _getPrincipalFromExpiredToken(model.AccessToken);
 
 			if (principal?.Identity?.Name is null)
-				return Unauthorized();
+				return Forbid();
 
 			var user = await _userManager.FindByNameAsync(principal.Identity.Name);
 
 			if (user is null || user.RefreshToken != model.RefreshToken || user.RefreshTokenExpiry < DateTime.UtcNow)
-				return Unauthorized();
+				return Forbid();
 
 			var token = _generateJwt(principal.Identity.Name);
 
