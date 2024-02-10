@@ -1,25 +1,18 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using WebApiAuthentication.Controllers;
 using WebApiAuthentication.DataAccess.Constants;
-using WebApiAuthentication.DataAccess.Models.Entities;
 
 namespace WebApiAuthentication.Services
 {
 	public class JwtAuthenticationService
 	{
-		private readonly UserManager<ApplicationUser> _userManager;
 		private readonly IConfiguration _configuration;
-		private readonly ILogger<AuthenticationController> _logger;
-		public JwtAuthenticationService(ILogger<AuthenticationController> logger, IConfiguration configuration, UserManager<ApplicationUser> userManager)
+		public JwtAuthenticationService(IConfiguration configuration)
 		{
-			_logger = logger;
 			_configuration = configuration;
-			_userManager = userManager;
 		}
 
 		public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
@@ -52,7 +45,7 @@ namespace WebApiAuthentication.Services
 			var token = new JwtSecurityToken(
 				issuer: _configuration["JWT:ValidIssuer"],
 				audience: _configuration["JWT:ValidAudience"],
-				expires: DateTime.UtcNow.AddSeconds(JwtTokenValues.AccessTokenExpiryMinutes), // Adjust token expiry as needed
+				expires: SetAccessTokenExpiry(), // Adjust token expiry as needed
 				claims: authClaims,
 				signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
 
@@ -70,8 +63,14 @@ namespace WebApiAuthentication.Services
 			return Convert.ToBase64String(randomNumber);
 		}
 
-
+		public DateTime SetRefreshTokenExpiry()
+		{
+			return DateTime.UtcNow.AddHours(JwtTokenValues.RefreshTokenExpiryHours);
+		}
+		public DateTime SetAccessTokenExpiry()
+		{
+			return DateTime.UtcNow.AddSeconds(10);
+		}
 	}
-
 }
 

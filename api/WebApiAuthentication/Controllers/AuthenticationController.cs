@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using WebApiAuthentication.DataAccess.Authentication;
 using WebApiAuthentication.DataAccess.Constants;
@@ -80,21 +81,23 @@ namespace WebApiAuthentication.Controllers
 
 			JwtSecurityToken token = _generateJwt(model.Username, roleClaims);
 
-			var refreshToken = _jwtAuthenticationService.GenerateRefreshToken();
+			var cookieRefreshToken = _jwtAuthenticationService.GenerateRefreshToken();
+
+			var refreshToken = _hashToken(cookieRefreshToken);
 
 			var cookieOptions = new CookieOptions
 			{
 				HttpOnly = true,
 				IsEssential = true,
-				Expires = DateTime.UtcNow.AddHours(JwtTokenValues.RefreshTokenExpiryHours), // Adjust according to your refresh token's expiry
+				Expires = _jwtAuthenticationService.SetRefreshTokenExpiry(), // Adjust according to your refresh token's expiry
 				SameSite = SameSiteMode.Strict, // Helps mitigate CSRF attacks
 				Secure = true // Ensure this cookie is only sent over HTTPS
 			};
 
-			Response.Cookies.Append(JwtTokenValues.RefreshTokenCookieName, refreshToken, cookieOptions);
+			Response.Cookies.Append(JwtTokenValues.RefreshTokenCookieName, cookieRefreshToken, cookieOptions);
 
 			user.RefreshToken = refreshToken;
-			user.RefreshTokenExpiry = DateTime.UtcNow.AddHours(JwtTokenValues.RefreshTokenExpiryHours);
+			user.RefreshTokenExpiry = _jwtAuthenticationService.SetRefreshTokenExpiry();
 
 			await _userManager.UpdateAsync(user);
 
@@ -103,7 +106,7 @@ namespace WebApiAuthentication.Controllers
 			return Ok(new LoginDtoResponse
 			{
 				AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
-				//AccessTokenExpiration = token.ValidTo,
+				AccessTokenExpiration = token.ValidTo,
 			});
 		}
 
@@ -117,11 +120,15 @@ namespace WebApiAuthentication.Controllers
 				return Forbid();
 			var user = await _userManager.FindByNameAsync(principal.Identity.Name);
 
-			var dbUser = await _db.Users.FirstOrDefaultAsync(x => x.RefreshToken == Request.Cookies[JwtTokenValues.RefreshTokenCookieName]);
+			var cookieRefreshToken = Request.Cookies[JwtTokenValues.RefreshTokenCookieName];
+
+			if (string.IsNullOrWhiteSpace(cookieRefreshToken))
+				return Forbid();
+
+			var dbUser = await _db.Users.FirstOrDefaultAsync(x => x.RefreshToken == _hashToken(cookieRefreshToken));
 
 			if (user is null || dbUser == null || dbUser.RefreshTokenExpiry < DateTime.UtcNow)
 				return Forbid();
-
 
 			// Fetch roles again for the user
 			var roles = await _userManager.GetRolesAsync(user);
@@ -134,8 +141,7 @@ namespace WebApiAuthentication.Controllers
 			return Ok(new LoginDtoResponse
 			{
 				AccessToken = new JwtSecurityTokenHandler().WriteToken(newAccessToken),
-				//AccessTokenExpiration = newAccessToken.ValidTo,
-				//RefreshToken = model.RefreshToken // Decide if you want to issue a new refresh token here
+				AccessTokenExpiration = newAccessToken.ValidTo,
 			});
 		}
 
@@ -143,9 +149,6 @@ namespace WebApiAuthentication.Controllers
 
 		[Authorize]
 		[HttpDelete("Revoke")] // after this is called, you cant use refresh call to get a new JWT
-		[ProducesResponseType(StatusCodes.Status200OK)]
-		[ProducesResponseType(StatusCodes.Status401Unauthorized)]
-		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
 		public async Task<IActionResult> Revoke()
 		{
 			_logger.LogInformation("Revoke called");
@@ -204,6 +207,16 @@ namespace WebApiAuthentication.Controllers
 				signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
 
 			return token;
+		}
+
+		private static string _hashToken(string token)
+		{
+			using (var sha256 = SHA256.Create())
+			{
+				var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(token));
+				var hash = BitConverter.ToString(hashedBytes).Replace("-", "").ToLowerInvariant();
+				return hash;
+			}
 		}
 	}
 }
